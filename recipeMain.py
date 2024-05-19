@@ -14,6 +14,10 @@ class RecipeManagerApp:
 
         self.db = Database()
         self.create_main_gui()
+        self.search_listbox = None  # Initialize search_listbox
+        self.last_search_term = ""
+        self.last_start_date = ""
+        self.last_end_date = ""
 
     def create_main_gui(self):
         """
@@ -138,19 +142,19 @@ class RecipeManagerApp:
         search_entry = Entry(search_window, width=30)
         search_entry.grid(row=0, column=1, columnspan=3, pady=5, sticky="w")
 
-        search_button = Button(search_window, text="Search", command=lambda: self.perform_search(search_entry, search_window, start_date_entry, end_date_entry), width=12, height=2)
+        search_button = Button(search_window, text="Search", command=lambda: self.perform_search(search_entry.get(), start_date_entry.get(), end_date_entry.get()), width=12, height=2)
         search_button.grid(row=1, column=0, columnspan=4, pady=10)
 
         button_frame = Frame(search_window)
         button_frame.grid(row=2, column=0, columnspan=4, pady=(10, 0))
 
-        delete_button = Button(button_frame, text="Delete Recipe", command=lambda: self.delete_selected_recipe(search_window), width=12, height=2)
+        delete_button = Button(button_frame, text="Delete Recipe", command=self.delete_selected_recipe, width=12, height=2)
         delete_button.grid(row=0, column=0, padx=5)
 
-        update_button = Button(button_frame, text="Update Recipe", command=lambda: self.open_update_recipe_window(search_window), width=12, height=2)
+        update_button = Button(button_frame, text="Update Recipe", command=self.open_update_recipe_window, width=12, height=2)
         update_button.grid(row=0, column=1, padx=5)
 
-        show_button = Button(button_frame, text="Show Recipe", command=lambda: self.show_recipe(search_window), width=12, height=2)
+        show_button = Button(button_frame, text="Show Recipe", command=self.show_recipe, width=12, height=2)
         show_button.grid(row=1, column=0, padx=5)
 
         cancel_button = Button(button_frame, text="Cancel", command=search_window.destroy, width=12, height=2)
@@ -181,18 +185,15 @@ class RecipeManagerApp:
         self.search_listbox.pack(side=LEFT, fill=BOTH, expand=True)
         scrollbar.config(command=self.search_listbox.yview)
 
-    def perform_search(self, search_entry, search_window, start_date_entry, end_date_entry):
+    def perform_search(self, search_term, start_date, end_date):
         """
         Performs the search operation and updates the listbox with the search results.
         """
-        self.search_listbox.delete(0, END)
-        search_term = search_entry.get().strip()
-        start_date = start_date_entry.get().strip()
-        end_date = end_date_entry.get().strip()
+        self.last_search_term = search_term
+        self.last_start_date = start_date
+        self.last_end_date = end_date
 
-        #print("Search Term:", search_term)
-        #print("Start Date:", start_date)
-        #print("End Date:", end_date)
+        self.search_listbox.delete(0, END)
 
         query = "SELECT id, title, date(date_added) FROM recipes WHERE 1=1"
         params = []
@@ -205,9 +206,6 @@ class RecipeManagerApp:
             query += " AND date(date_added) BETWEEN ? AND ?"
             params.extend([start_date, end_date])
 
-        #print("Query:", query)
-        #print("Params:", params)
-
         results = self.db.search_recipes(query, params)
 
         if results:
@@ -216,9 +214,7 @@ class RecipeManagerApp:
         else:
             self.search_listbox.insert(END, "No recipes found")
 
-
-
-    def delete_selected_recipe(self, search_window):
+    def delete_selected_recipe(self):
         """
         Deletes the selected recipe from the database.
         """
@@ -227,10 +223,10 @@ class RecipeManagerApp:
             selected_recipe = self.search_listbox.get(selected[0])
             recipe_id = int(selected_recipe.split(":")[1].split(" -")[0].strip())
             self.db.delete_recipe(recipe_id)
-            self.perform_search(search_window.nametowidget(".!toplevel.!entry"), search_window)
+            self.perform_search(self.last_search_term, self.last_start_date, self.last_end_date)
             print("Recipe deleted from database.")
 
-    def open_update_recipe_window(self, search_window):
+    def open_update_recipe_window(self):
         """
         Opens the update recipe window for the selected recipe.
         """
@@ -240,7 +236,7 @@ class RecipeManagerApp:
             recipe_id = int(selected_recipe.split(":")[1].split(" -")[0].strip())
             UpdateRecipeWindow(self.root, self.db, recipe_id)
 
-    def show_recipe(self, search_window):
+    def show_recipe(self):
         """
         Shows the selected recipe in a new window.
         """

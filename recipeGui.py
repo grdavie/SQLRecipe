@@ -140,6 +140,7 @@ class UpdateRecipeWindow:
         self.window.title("Update Recipe")
         self.window.geometry("480x700")
 
+
         self.title_entry, self.description_entry, self.ingredient_entry, self.ingredients_display, self.instructions_entry, self.serving_size_entry, self.prep_time_entry, self.tags_entry = GUIUtils.create_recipe_form(self.window)
         
         self.populate_fields()
